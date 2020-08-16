@@ -1,1 +1,178 @@
+import pygame
+import random
+import math
+from random import randint
 
+pygame.init()
+root=pygame.display.set_mode((1000,600))
+clock=pygame.time.Clock()
+black=[0,0,0]
+red=[255,0,0]
+white=[255,255,255]
+dis=0
+font_style = pygame.font.SysFont(None, 30)
+player=True
+
+class paddle:
+    def __init__(self,x):
+        self.x=x
+        self.y=300
+        self.s_x=10
+        self.s_y=100
+        self.change=0
+        self.time_pause=0
+    def draw(self):
+        pygame.draw.rect(root,red,[self.x,self.y,self.s_x,self.s_y])
+    def update(self):
+      if self.change>0 and self.y+self.change<=500:
+          self.y+=self.change
+      elif self.change <0 and self.y-self.change>=0:
+          self.y+=self.change
+      else:
+          pass
+class ping():
+    def __init__(self):
+        self.x=500
+        self.y=300
+        self.s=10
+        self.speed_x = random.randint(-1, 1)
+
+        while self.speed_x == 0:
+            self.speed_x = random.randint(-1, 1)
+        self.speed_y= 0 #int(random.randrange(2,6))
+    def draw(self):
+        pygame.draw.circle(root,red,[int(self.x),int(self.y)],self.s)
+    def update(self):
+        self.x+=self.speed_x
+        self.y+=self.speed_y
+    def bounce(self,x,y ,angle=None):
+        if angle!=None:
+            self.speed_x=5*math.cos(angle)
+            self.speed_y=5*math.sin(angle)
+        else:
+            self.speed_x*=x
+            self.speed_y*=y
+        # print(self.speed_x,self.speed_y)
+
+def MAP1(value,mina,maxa,minb,maxb):
+    return (1-((value-mina)/(maxa-mina)))*minb+((value-mina)/(maxa-mina))*maxb
+def game():
+    right_paddle = paddle(990)
+    left_paddle = paddle(0)
+    puck = ping()
+    i=True
+    r_score=0
+    l_score=0
+    while i:
+        for event in pygame.event.get():
+            if (event.type == pygame.KEYDOWN):
+                if (event.key == pygame.K_g):
+                    i=False
+    while True:
+
+        root.fill(black)
+        puck.draw()
+        right_paddle.draw()
+        left_paddle.draw()
+        clock.tick(120)
+        if puck.x+puck.s/2>=right_paddle.x and puck.x+puck.s/2< right_paddle.x+right_paddle.s_x and \
+            puck.y>=right_paddle.y-20 and puck.y<=right_paddle.y+right_paddle.s_y+20:
+            # puck.bounce(-1,1)
+            dis =int(math.dist([puck.x,puck.y],[right_paddle.x,right_paddle.y]))
+            # angle=(abs(int(dir/(right_paddle.s_y/2)*120)))+100
+            angle=MAP1(dis,0,right_paddle.s_y,-135,-235)
+            puck.bounce(1,1,math.radians(angle))
+            right_paddle.time_pause+=150
+            #print(dis,angle,-math.radians(angle))
+        if puck.x-puck.s/2<=left_paddle.x+left_paddle.s_x and  puck.x-puck.s>=left_paddle.x and \
+            puck.y >=left_paddle.y-20 and puck.y<left_paddle.y+left_paddle.s_y +20 :
+            dis = math.dist([puck.x, puck.y], [left_paddle.x, left_paddle.y])
+            angle =MAP1(dis,0,left_paddle.s_y,-60,60)
+            puck.bounce(-1, 1,math.radians(angle))
+        if player==False:
+            # ranint=0
+            # if randint(0,200)==10:
+            #     ranint=10
+            # if randint(0,200)==10:
+            #     ranint=-10
+            # if randint(0,200)==10:
+            #     ranint=20
+            # if randint(0,200)==10:
+            #     ranint=--20
+            # if randint(0,200)==10:
+            #     ranint=30
+            # if randint(0, 200) == 10:
+            #     ranint = -30
+            # if randint(0, 200) == 10:
+            #     ranint = 40
+            if randint(0, 200) == 10 and right_paddle.time_pause<=0:
+                right_paddle.time_pause+=50
+            if right_paddle.time_pause<0:
+                right_paddle.y = int(puck.y-right_paddle.s_y/2)
+            else:
+                right_paddle.time_pause-=1
+
+        right_paddle.update()
+        left_paddle.update()
+        puck.update()
+        mesg = font_style.render(str(r_score), True, white)
+        root.blit(mesg, [525, 20])
+        mesg1 = font_style.render(str(l_score), True, white)
+        root.blit(mesg1, [495, 20])
+        pygame.display.update()
+        for event in pygame.event.get():
+            if (event.type == pygame.KEYUP):
+                if (event.key == pygame.K_w):
+                    left_paddle.change = 0
+                if (event.key == pygame.K_s):
+                    left_paddle.change = 0
+                if player == True:
+                    if (event.key == pygame.K_k):
+                        right_paddle.change = 0
+                    if (event.key == pygame.K_m):
+                        right_paddle.change = 0
+            if(event.type == pygame.KEYDOWN):
+                if(event.key == pygame.K_w):
+                    left_paddle.change=-6
+                if (event.key == pygame.K_s):
+                    left_paddle.change=6
+                if player == True:
+                    if (event.key == pygame.K_k):
+                        right_paddle.change=-6
+                    if (event.key == pygame.K_m):
+                        right_paddle.change=6
+                if(event.key == pygame.K_h):
+                    r_score=0
+                    l_score=0
+                    puck.x = 500
+                    puck.y = 300
+                    puck.s = 10
+                    puck.speed_x = random.randint(-1,1)
+                    while puck.speed_x==0:
+                        puck.speed_x = random.randint(-1, 1)
+                    puck.speed_y = 0
+            if (event.type == pygame.QUIT):
+                pygame.quit()
+                quit()
+        if puck.x < 0 :
+            puck.x = 500
+            puck.y = 300
+            puck.s = 10
+            puck.speed_x=1
+            puck.speed_y=0
+            r_score+=1
+        if  puck.x > 1000:
+            puck.x = 500
+            puck.y = 300
+            puck.s = 10
+            puck.speed_x = -1
+            puck.speed_y = 0
+            l_score+=1
+            if(puck.speed_x>0):
+                bounce=true
+            else:
+                bounce=False
+
+        if puck.y>=605 or puck.y <=0:
+            puck.bounce(1,-1)
+game()
