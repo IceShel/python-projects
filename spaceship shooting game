@@ -1,1 +1,144 @@
+import pygame
+import math
+import random
+import time
+pygame.init()
+root =pygame.display.set_mode((1200,700))
+p_x=250
+p_y=250
+center_tri=[p_x,p_y]
+angle=math.radians(45)
+size_tri=50
+clock=pygame.time.Clock()
+i=True
+x_change=0
+y_change=0
+bullets=[]
+enemies=[]
+max_enemies=5
+ene_health=10
+player_dam=5
+fire_rate=10
+time_done=0
+player_health=100
+ene_dam=10
+firing=False
+score=0
+ready_to_attack=0
+attack_rate=2
+font_style = pygame.font.SysFont(None, 50)
+scaling=False
+def MAP1(value,mina,maxa,minb,maxb):
+    return (1-((value-mina)/(maxa-mina)))*minb+((value-mina)/(maxa-mina))*maxb
+def calculate_tri(center_tri,angle,size_tri):
+    point1= [int(center_tri[0]),int(center_tri[1])]
+    point2=[int(center_tri[0]+size_tri*math.cos(angle)),int(center_tri[1]+size_tri*math.sin(angle))]
+    point3 = [int(center_tri[0] + size_tri * math.cos(angle+math.radians(90))),int(center_tri[1] + size_tri * math.sin(angle+math.radians(90)))]
+    return [point1,point2,point3]
+triangle=calculate_tri(center_tri,angle,size_tri)
+def calculate_angle(p_x,p_y):
+    dx=(pygame.mouse.get_pos()[0]-p_x)
+    dy=-(pygame.mouse.get_pos()[1]-p_y)
+    inrad=math.atan2(dy,dx)
+    if inrad<0:
+        inrad=abs(inrad)
+    else:
+        inrad = 2 * math.pi - inrad
+    inrad = math.degrees(inrad) + 140
+    return math.radians(inrad)
+def cal_angle_enemies(p_x,p_y,e_x,e_y):
+    dx=(e_x-p_x)
+    dy=-(e_y-p_y)
+    inrad=math.atan2(dy,dx)
+    if inrad<0:
+        inrad=abs(inrad)
+    else:
+        inrad=2*math.pi-inrad
+    inrad=math.degrees(inrad)+140
+    return math.radians(inrad)
+while i:
+    root.fill([0,0,0])
+    clock.tick(120)
+    p_x+=x_change
+    p_y+=y_change
+    pygame.draw.aalines(root,[25,255,255],True,triangle)
+    pygame.draw.circle(root,[25,255,255],triangle[0],int(size_tri/15))
+    triangle = calculate_tri(center_tri, angle, size_tri)
+    if player_health<=0:
+        break
+    for bullet in bullets:
+        if bullet[4] ==False:
+            bullets.remove(bullet)
+        bullet[0]+=10*math.cos(bullet[2])
+        bullet[1]+=10*math.sin(bullet[2])
+        pygame.draw.circle(root, [25, 255, 255], [int(bullet[0]), int(bullet[1])], 10)
+        for enemie in enemies:
+            if bullet[0]>enemie[0]-enemie[2]/2 and bullet[0]<enemie[0]+enemie[2] and \
+                bullet[1]>enemie[1]-enemie[2]/2 and bullet[1]<enemie[1]+enemie[2] and bullet[4] and enemie[6]<time.time():
 
+                enemie[3]-=bullet[3]
+                bullet[4]=False
+            # elif bullet[0]>enemie[0]-enemie[2]/2 and bullet[0]<enemie[0]+enemie[2]/2 and \
+            #     bullet[1]>enemie[1]-enemie[2]/2 and bullet[1]< enemie[1] + enemie[2]/2 and bullet[4]:
+            #     enemie[3] -= bullet[3]
+            #     bullet[4]=False
+
+    if len(enemies)<int(max_enemies):
+        ready_to_attack=time.time()+1/attack_rate
+        enemies.append([random.randint(0,1200),random.randint(0,700),random.randint(25,45),ene_health,ene_dam,True,ready_to_attack])
+    for enemie in enemies:
+        enemie[0]+=0.5*math.cos(cal_angle_enemies(p_x,p_y,enemie[0],enemie[1]))
+        enemie[1] +=0.5 * math.sin(cal_angle_enemies(p_x,p_y,enemie[0],enemie[1]))
+        if enemie[3]<=0:
+            enemies.remove(enemie)
+            score+=1
+            if scaling==True:
+                max_enemies+=0.05
+                fire_rate+=0.05
+        if p_x > enemie[0] - enemie[2] / 2 and p_x < enemie[0] + enemie[2] and \
+                p_y > enemie[1] - enemie[2] / 2 and p_y < enemie[1] + enemie[2] and enemie[6]<time.time():
+           enemie[6] = time.time() + 1 / attack_rate
+           player_health-=enemie[4]
+           enemie[5]=False
+
+        pygame.draw.circle(root,[255,0,0],[int(enemie[0]),int(enemie[1])],enemie[2])
+    mesg = font_style.render(str(score), True, [255,255,255])
+    root.blit(mesg, [525, 20])
+    mesg1 = font_style.render(str(player_health), True, [255, 255, 255])
+    root.blit(mesg1, [100, 20])
+    pygame.display.update()
+    angle=calculate_angle(p_x,p_y)
+    triangle = calculate_tri(center_tri, angle, size_tri)
+    center_tri = [p_x, p_y]
+    if (firing) and time_done< time.time():
+        time_done = time.time() + 1 / int(fire_rate)
+        bullets.append([p_x, p_y, math.radians(math.degrees(angle) - 140), player_dam, True])
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            firing=True
+        if event.type == pygame.MOUSEBUTTONUP:
+            firing=False
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+        if event.type ==pygame.KEYDOWN:
+            if event.key == pygame.K_h:
+                i=False
+            if event.key == pygame.K_w:
+                y_change=-2
+            if event.key == pygame.K_s:
+                y_change=2
+            if event.key == pygame.K_a:
+                x_change = -2
+            if event.key == pygame.K_d:
+                x_change = 2
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_w:
+                y_change = 0
+            if event.key == pygame.K_s:
+                y_change = 0
+            if event.key == pygame.K_a:
+                x_change = 0
+            if event.key == pygame.K_d:
+                x_change = 0
+print(score)
